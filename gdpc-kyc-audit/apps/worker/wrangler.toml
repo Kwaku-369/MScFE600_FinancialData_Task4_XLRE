@@ -1,0 +1,53 @@
+name = "gdpc-kyc-audit"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The web UI is served as static assets from the same Worker, so a deployment is
+# a single `wrangler deploy` with no separate Pages project to keep in step.
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gdpc-kyc"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+# Uploaded submissions and generated workbooks. Files are kept so that a past
+# submission can be re-audited against a corrected template without asking the
+# bank to send it again.
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "gdpc-kyc-files"
+
+# Identity verification is asynchronous end to end: the queue drives the calls
+# out to MetaMap, and the results arrive later on the callback endpoint.
+[[queues.producers]]
+binding = "VERIFY_QUEUE"
+queue = "gdpc-verify"
+
+[[queues.consumers]]
+queue = "gdpc-verify"
+max_batch_size = 25
+max_batch_timeout = 10
+max_retries = 3
+dead_letter_queue = "gdpc-verify-dlq"
+
+[vars]
+ENVIRONMENT = "development"
+METAMAP_BASE_URL = "https://api.prod.metamap.com"
+# Public origin of this Worker, used to build the callback URL MetaMap posts to.
+PUBLIC_BASE_URL = "http://localhost:8787"
+# Records above this disposition are never auto-published in direct mode.
+DIRECT_PUBLISH_MAX_DISPOSITION = "auto_corrected"
+ANTHROPIC_MODEL = "claude-opus-5"
+
+# Secrets — set with `wrangler secret put <NAME>`, never in this file:
+#   METAMAP_CLIENT_ID
+#   METAMAP_CLIENT_SECRET
+#   METAMAP_WEBHOOK_SECRET
+#   ANTHROPIC_API_KEY
+#   SESSION_SECRET
