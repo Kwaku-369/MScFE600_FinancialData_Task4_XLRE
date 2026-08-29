@@ -1,8 +1,15 @@
 export interface Env {
   DB: D1Database;
   FILES: R2Bucket;
-  VERIFY_QUEUE: Queue<VerifyJobMessage>;
   ASSETS: Fetcher;
+
+  /**
+   * Optional. Cloudflare Queues requires the Workers Paid plan, so the binding
+   * is commented out in wrangler.toml by default and the pipeline falls back to
+   * dispatching NIA lookups inline. The queue adds retry, backpressure and
+   * durability — valuable at volume, not required for correctness.
+   */
+  VERIFY_QUEUE?: Queue<VerifyJobMessage>;
 
   ENVIRONMENT: string;
   METAMAP_BASE_URL: string;

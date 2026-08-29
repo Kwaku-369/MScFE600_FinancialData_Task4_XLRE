@@ -30,7 +30,9 @@ import {
 } from "@gdpc/core";
 
 import type { Env, VerifyJobMessage } from "../env.js";
+import { credentialsFrom, startGhanaCardVerification } from "./metamap.js";
 import {
+  completeVerificationJob,
   createVerificationJob,
   getCachedVerifications,
   getInstitution,
@@ -195,13 +197,67 @@ export async function dispatchVerifications(
     });
   }
 
-  // Queues cap a send batch at 100 messages.
-  for (let i = 0; i < messages.length; i += 100) {
-    await env.VERIFY_QUEUE.sendBatch(messages.slice(i, i + 100));
+  if (env.VERIFY_QUEUE) {
+    // Queues cap a send batch at 100 messages.
+    for (let i = 0; i < messages.length; i += 100) {
+      await env.VERIFY_QUEUE.sendBatch(messages.slice(i, i + 100));
+    }
+  } else {
+    // No queue binding (the free plan has none): start the lookups inline.
+    await dispatchInline(env, messages.map((m) => m.body));
   }
 
   await updateBatch(env, batch.id, { status: "verifying" });
   return messages.length;
+}
+
+/**
+ * Start the NIA lookups without a queue.
+ *
+ * Each lookup is one POST that returns 202 — the NIA record arrives later on
+ * the callback endpoint — so the work here is IO-bound and short. Requests go
+ * out in small concurrent waves rather than all at once, to stay inside the
+ * Worker's subrequest limit and to avoid hammering the provider.
+ *
+ * What is genuinely lost without the queue is durability and retry: if the
+ * Worker is evicted mid-wave, the outstanding jobs stay `pending` rather than
+ * being redelivered. They are not silently dropped — the batch can still be
+ * finalised, and those records are reported as unverified. Enable the queue for
+ * large submissions.
+ */
+const INLINE_CONCURRENCY = 6;
+
+async function dispatchInline(env: Env, jobs: VerifyJobMessage[]): Promise<void> {
+  const credentials = credentialsFrom(env);
+  const callbackUrl = `${env.PUBLIC_BASE_URL.replace(/\/$/, "")}/api/webhooks/metamap/ghana-card`;
+
+  for (let i = 0; i < jobs.length; i += INLINE_CONCURRENCY) {
+    const wave = jobs.slice(i, i + INLINE_CONCURRENCY);
+
+    await Promise.all(
+      wave.map(async (job) => {
+        try {
+          await startGhanaCardVerification(credentials, {
+            personalNumber: job.personalNumber,
+            callbackUrl,
+            correlationId: job.correlationId,
+          });
+        } catch (error) {
+          // One card failing must not abandon the rest of the batch. Record it
+          // against the job so finalisation reports the record as unverified
+          // rather than waiting on a callback that will never arrive.
+          const message = error instanceof Error ? error.message : String(error);
+          console.error("Inline verification dispatch failed", {
+            correlationId: job.correlationId,
+            error: message,
+          });
+          await completeVerificationJob(env, job.correlationId, "failed", message).catch(
+            () => undefined,
+          );
+        }
+      }),
+    );
+  }
 }
 
 export interface FinaliseResult {

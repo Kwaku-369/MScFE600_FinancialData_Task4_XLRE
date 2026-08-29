@@ -183,34 +183,78 @@ Then create the first administrator through the sign-in screen.
 
 ## Deploying to Cloudflare
 
+### Already provisioned
+
+The D1 database exists and its schema is applied:
+
+- **Database** `gdpc-kyc`, id `ef6bc628-4a61-4436-9d52-80d3b394a9f6`, region WEUR
+  (the closest D1 region to Ghana). The id is already in `wrangler.toml`, and all
+  10 tables and 17 indexes are live.
+
+### Two things you must do
+
+**1. Enable R2** — one click, and it has a free tier. Cloudflare dashboard ->
+R2 -> Enable. Until you do, the API rejects every R2 call with *"Please enable
+R2 through the Cloudflare Dashboard"* and the deploy fails on the `FILES`
+binding. Then create the bucket:
+
 ```bash
-# Create the resources
-npx wrangler d1 create gdpc-kyc          # put the id in wrangler.toml
 npx wrangler r2 bucket create gdpc-kyc-files
-npx wrangler queues create gdpc-verify
-npx wrangler queues create gdpc-verify-dlq
-
-# Secrets — never in wrangler.toml
-npx wrangler secret put SESSION_SECRET
-npx wrangler secret put METAMAP_CLIENT_ID
-npx wrangler secret put METAMAP_CLIENT_SECRET
-npx wrangler secret put METAMAP_WEBHOOK_SECRET
-npx wrangler secret put ANTHROPIC_API_KEY
-
-npx wrangler d1 migrations apply gdpc-kyc --remote
-cd ../web && npm run build && cd ../worker && npx wrangler deploy
 ```
 
-Set `PUBLIC_BASE_URL` in `wrangler.toml` to the deployed origin — it is what the
-MetaMap callback URL is built from, so verification results will not come back
-if it is wrong. In the MetaMap dashboard, set the webhook secret to the same
-value as `METAMAP_WEBHOOK_SECRET`; it must be at least 16 characters with an
-upper-case letter, a lower-case letter and a digit.
+**2. Deploy.** This step needs your own credentials, so it has to run from your
+machine:
 
-The platform runs without MetaMap credentials — batches process and audit, with
-every record reported as unverified rather than the run failing. It runs without
-`ANTHROPIC_API_KEY` too; the agent endpoints return a clear error and everything
-deterministic still works.
+```bash
+cd apps/web && npm run build && cd ../worker
+npx wrangler login
+npx wrangler secret put SESSION_SECRET     # any long random string
+npx wrangler deploy
+```
+
+That prints the live URL. Put it in `PUBLIC_BASE_URL` in `wrangler.toml` and
+deploy once more — it is what the MetaMap callback address is built from, so
+verification results will not come back if it is stale.
+
+Then open the URL and create the first administrator from the sign-in screen.
+
+### Queues are optional, and off by default
+
+Cloudflare Queues requires the **Workers Paid** plan. Rather than gate the whole
+platform behind a subscription, the queue blocks in `wrangler.toml` are
+commented out and the Worker treats `VERIFY_QUEUE` as optional: when the binding
+is absent it dispatches the NIA lookups inline instead, in small concurrent
+waves.
+
+The queue is not needed for correctness — MetaMap's GovCheck is callback-based
+either way. What it adds is retry, backpressure and durability across a Worker
+restart. Without it, a Worker evicted mid-dispatch leaves those jobs `pending`;
+they are not silently lost, and the batch still finalises with those records
+reported as unverified. Turn it on for large submissions:
+
+```bash
+npx wrangler queues create gdpc-verify
+npx wrangler queues create gdpc-verify-dlq
+```
+
+then uncomment both blocks in `wrangler.toml` and redeploy. No code change.
+
+### Optional secrets
+
+```bash
+npx wrangler secret put METAMAP_CLIENT_ID       # without these, records are
+npx wrangler secret put METAMAP_CLIENT_SECRET   # reported unverified
+npx wrangler secret put METAMAP_WEBHOOK_SECRET  # needed only with MetaMap
+npx wrangler secret put ANTHROPIC_API_KEY       # without it, agents are off
+```
+
+In the MetaMap dashboard, set the webhook secret to the same value as
+`METAMAP_WEBHOOK_SECRET`; it must be at least 16 characters with an upper-case
+letter, a lower-case letter and a digit.
+
+The platform runs without any of these. Batches still map, normalise, audit and
+produce both workbooks; every record is simply reported as unverified, and the
+agent endpoints return a clear error.
 
 ## Security
 
@@ -234,6 +278,16 @@ The domain engine, the API, the verification pipeline and the UI are complete
 and tested end to end against a live local Worker: upload, auto-mapping,
 normalisation, audit, direct-mode publish gating, and both generated workbooks.
 
+The no-queue path is exercised too, including its failure handling: run against
+the real MetaMap endpoint with invalid credentials, all five dispatches returned
+403, every one was caught and recorded, and the batch still finalised with those
+records reported as unverified rather than hanging.
+
+**Not yet deployed.** The D1 database is provisioned and migrated, but R2 needs
+enabling on the account and `wrangler deploy` needs credentials that only run
+from your machine. See above.
+
 Not yet done: a reconciliation module (planned next), the B/C/D table flows
 exercised only through the same generic pipeline as table A, and bulk
-re-verification scheduling.
+re-verification scheduling. There is also no CI in this repository, so the 73
+tests run only when someone runs them.

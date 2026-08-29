@@ -13,41 +13,62 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "gdpc-kyc"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "ef6bc628-4a61-4436-9d52-80d3b394a9f6"
 migrations_dir = "migrations"
 
 # Uploaded submissions and generated workbooks. Files are kept so that a past
 # submission can be re-audited against a corrected template without asking the
 # bank to send it again.
+#
+# R2 must be enabled once for the account before this binding resolves:
+# Cloudflare dashboard -> R2 -> Enable. It has a free tier; the deploy fails
+# with "Please enable R2 through the Cloudflare Dashboard" until you do.
 [[r2_buckets]]
 binding = "FILES"
 bucket_name = "gdpc-kyc-files"
 
-# Identity verification is asynchronous end to end: the queue drives the calls
-# out to MetaMap, and the results arrive later on the callback endpoint.
-[[queues.producers]]
-binding = "VERIFY_QUEUE"
-queue = "gdpc-verify"
-
-[[queues.consumers]]
-queue = "gdpc-verify"
-max_batch_size = 25
-max_batch_timeout = 10
-max_retries = 3
-dead_letter_queue = "gdpc-verify-dlq"
+# ---------------------------------------------------------------------------
+# Queues — OPTIONAL, and commented out by default.
+#
+# Cloudflare Queues requires the Workers Paid plan. Rather than gate the whole
+# platform behind a subscription, the Worker treats VERIFY_QUEUE as optional: if
+# the binding is absent it dispatches the NIA lookups inline instead.
+#
+# The queue is not needed for correctness. MetaMap's Ghana GovCheck is
+# callback-based either way — the queue only adds retry, backpressure and
+# durability across a Worker restart. That matters at volume, so enable this
+# once submissions get large:
+#
+#   npx wrangler queues create gdpc-verify
+#   npx wrangler queues create gdpc-verify-dlq
+#
+# then uncomment both blocks and redeploy. No code change is needed.
+# ---------------------------------------------------------------------------
+# [[queues.producers]]
+# binding = "VERIFY_QUEUE"
+# queue = "gdpc-verify"
+#
+# [[queues.consumers]]
+# queue = "gdpc-verify"
+# max_batch_size = 25
+# max_batch_timeout = 10
+# max_retries = 3
+# dead_letter_queue = "gdpc-verify-dlq"
 
 [vars]
 ENVIRONMENT = "development"
 METAMAP_BASE_URL = "https://api.prod.metamap.com"
 # Public origin of this Worker, used to build the callback URL MetaMap posts to.
+# Set this to the deployed workers.dev URL after the first deploy, then deploy
+# again — verification results will not come back if it is stale.
 PUBLIC_BASE_URL = "http://localhost:8787"
 # Records above this disposition are never auto-published in direct mode.
 DIRECT_PUBLISH_MAX_DISPOSITION = "auto_corrected"
 ANTHROPIC_MODEL = "claude-opus-5"
 
 # Secrets — set with `wrangler secret put <NAME>`, never in this file:
-#   METAMAP_CLIENT_ID
-#   METAMAP_CLIENT_SECRET
-#   METAMAP_WEBHOOK_SECRET
-#   ANTHROPIC_API_KEY
-#   SESSION_SECRET
+#   SESSION_SECRET          (required)
+#   METAMAP_CLIENT_ID       (optional — without it records are reported unverified)
+#   METAMAP_CLIENT_SECRET   (optional)
+#   METAMAP_WEBHOOK_SECRET  (required only if MetaMap is configured)
+#   ANTHROPIC_API_KEY       (optional — without it the agent endpoints are disabled)
