@@ -61,16 +61,25 @@ export const HEADER_SYNONYMS: Record<string, string[]> = {
   "depositor.gender": [
     "GENDER", "SEX", "M F", "GENDER M F", "SEX M F",
   ],
+  // "MAIN PHONE NUMBER" is the GDPC template's own heading and must win outright.
+  // Mobile-money headings are deliberately NOT here: the template carries a
+  // separate Mobile Money Number column, and folding the two together loses a
+  // payout route that often survives when the bank's own contact number does not.
   "depositor.mobile_number": [
+    "MAIN PHONE NUMBER", "MAIN PHONE", "MAIN CONTACT",
     "MOBILE NUMBER", "MOBILE NO", "MOBILE", "PHONE", "PHONE NUMBER", "PHONE NO",
     "TELEPHONE", "TELEPHONE NUMBER", "TEL", "TEL NO", "CONTACT",
     "CONTACT NUMBER", "CONTACT NO", "CELL", "CELL NUMBER", "MSISDN",
-    "PRIMARY PHONE", "PRIMARY CONTACT", "MOBILE PHONE", "CUSTOMER CONTACT",
-    "MOMO NUMBER", "MOBILE MONEY NUMBER",
+    "PRIMARY PHONE", "PRIMARY CONTACT", "CUSTOMER CONTACT",
   ],
   "depositor.alternate_number": [
+    "MOBILE PHONE NUMBER", "MOBILE PHONE",
     "ALTERNATE NUMBER", "ALTERNATIVE NUMBER", "OTHER PHONE", "SECOND PHONE",
     "SECONDARY CONTACT", "OTHER CONTACT", "PHONE 2", "TEL 2",
+  ],
+  "depositor.momo_number": [
+    "MOBILE MONEY NUMBER", "MOMO NUMBER", "MOMO", "MOBILE MONEY",
+    "MOBILE MONEY NO", "MOMO NO", "WALLET NUMBER", "MOMO WALLET",
   ],
   "depositor.email": [
     "EMAIL", "E MAIL", "EMAIL ADDRESS", "E MAIL ADDRESS", "MAIL",
@@ -80,6 +89,22 @@ export const HEADER_SYNONYMS: Record<string, string[]> = {
     "TYPE OF CUSTOMER", "CATEGORY",
   ],
   "depositor.tin": ["TIN", "TIN NO", "TAX ID", "TAX IDENTIFICATION NUMBER"],
+  "depositor.title": ["TITLE", "SALUTATION", "COURTESY TITLE", "PREFIX"],
+  "depositor.previous_name": [
+    "PREVIOUS NAME", "FORMER NAME", "MAIDEN NAME", "NAME AT BIRTH", "ALIAS",
+  ],
+  "depositor.company_name": [
+    "COMPANY NAME", "BUSINESS NAME", "ENTITY NAME", "ORGANISATION NAME",
+    "CORPORATE NAME", "TRADING NAME",
+  ],
+  "depositor.company_number": [
+    "COMPANY NUMBER IF ANY", "COMPANY NUMBER", "COMPANY NO",
+    "REGISTRATION NUMBER", "INCORPORATION NUMBER", "BUSINESS REG NO",
+  ],
+  "depositor.pep": [
+    "POLITICALLY EXPOSED PERSON YES NO", "POLITICALLY EXPOSED PERSON",
+    "POLITICALLY EXPOSED", "PEP", "PEP YES NO", "PEP STATUS",
+  ],
 
   "address.digital_address": [
     "GHANA POST GPS", "GHANAPOST GPS", "GPS ADDRESS", "DIGITAL ADDRESS",
@@ -95,6 +120,7 @@ export const HEADER_SYNONYMS: Record<string, string[]> = {
   "address.postal_address": [
     "POSTAL ADDRESS", "POSTAL", "PO BOX", "P O BOX", "BOX", "MAILING ADDRESS",
   ],
+  "address.country": ["COUNTRY", "COUNTRY OF RESIDENCE", "NATION"],
 
   "account.account_number": [
     "ACCOUNT NUMBER", "ACCOUNT NO", "ACCT NO", "ACCT NUMBER", "AC NO",
@@ -102,10 +128,19 @@ export const HEADER_SYNONYMS: Record<string, string[]> = {
   ],
   "account.account_type": [
     "ACCOUNT TYPE", "ACCT TYPE", "TYPE OF ACCOUNT", "PRODUCT",
-    "PRODUCT TYPE", "PRODUCT NAME", "SCHEME", "SCHEME TYPE", "DEPOSIT TYPE",
+    "PRODUCT TYPE", "SCHEME", "SCHEME TYPE", "DEPOSIT TYPE",
+  ],
+  // Distinct from Account Type in the GDPC template: the core's own product
+  // label, which is where T24 leaks its section banners.
+  "account.product_name": [
+    "PRODUCT NAME", "PRODUCT DESCRIPTION", "PRODUCT LABEL", "SCHEME NAME",
+  ],
+  "account.ownership": [
+    "ACCOUNT BY OWNERSHIP", "OWNERSHIP", "ACCOUNT OWNERSHIP", "OWNERSHIP TYPE",
   ],
   "account.currency": ["CURRENCY", "CCY", "CURRENCY CODE"],
   "account.balance": [
+    "ACCOUNT BALANCE IN CEDIS", "BALANCE IN CEDIS", "CEDI BALANCE",
     "ACCOUNT BALANCE", "BALANCE", "CURRENT BALANCE", "LEDGER BALANCE",
     "AVAILABLE BALANCE", "CLOSING BALANCE", "DEPOSIT BALANCE", "AMOUNT",
     "BAL", "BOOK BALANCE",
@@ -131,6 +166,27 @@ export const HEADER_SYNONYMS: Record<string, string[]> = {
   "account.lien_amount": [
     "LIEN AMOUNT", "LIEN", "ENCUMBERED AMOUNT", "AMOUNT ON LIEN",
     "HOLD AMOUNT", "BLOCKED AMOUNT", "PLEDGED AMOUNT",
+  ],
+
+  "compensation.exclusion_type": [
+    "EXCLUSION TYPE", "EXCLUSION", "EXCLUSION REASON", "EXCLUDED DEPOSIT TYPE",
+  ],
+  "account.joint_share": [
+    "ACCOUNT BALANCE SHARE FOR JOINT ACCOUNTS", "JOINT SHARE",
+    "SHARE FOR JOINT ACCOUNTS", "PERCENTAGE SHARE", "SHARE PERCENTAGE",
+  ],
+  "account.auth_negative_balance": [
+    "AUTH NEGATIVE BALANCE", "AUTHORISED NEGATIVE BALANCE", "OVERDRAFT",
+    "AUTHORISED OVERDRAFT", "OD LIMIT",
+  ],
+  "account.balance_original": [
+    "ACCOUNT BALANCE IN ORIGINAL CURRENCY", "BALANCE IN ORIGINAL CURRENCY",
+    "ORIGINAL CURRENCY BALANCE",
+  ],
+  "account.exchange_rate": ["EXCHANGE RATE", "FX RATE", "RATE", "CONVERSION RATE"],
+  "account.overdue_loans": [
+    "OVERDUE LOANS", "OVERDUE LOAN", "LOANS OVERDUE", "PAST DUE LOANS",
+    "DELINQUENT LOANS", "LOAN ARREARS",
   ],
 
   "compensation.total_balance": [

@@ -1,361 +1,379 @@
 /**
- * GDPC Single Customer View submission profile.
+ * GDPC depositor-data submission profile.
  *
- * IMPORTANT — READ BEFORE RELYING ON THIS FILE
+ * PROVENANCE
  *
- * The Ghana Deposit Protection Corporation does not publish its depositor-data
- * upload template openly; member institutions receive it directly. The layout
- * below follows the four-table Single Customer View structure used by deposit
- * insurers generally (A depositor, B address, C account, D compensation), with
- * field names and types chosen to match what Ghanaian rural and community banks
- * actually hold.
+ * The column list below is taken from a real GDPC extract produced by a member
+ * rural bank from its Temenos T24 core: thirty-five columns on a single flat
+ * sheet, headed exactly as reproduced in `header` here. This replaces the
+ * earlier four-table Single Customer View guess, which was wrong — GDPC takes
+ * one row per account, with the depositor's details repeated on each of their
+ * accounts rather than normalised into separate depositor / address / account
+ * tables.
  *
- * It is therefore a STARTING POINT, not an authority. When the official
- * template is to hand, correct the `header` strings, `required` flags and
- * `enumValues` here — nothing else in the engine needs to change, because every
- * other module reads the profile rather than hard-coding columns. Bump
- * `version` and record where the definition came from in `provenance` so an
- * auditor can tell which template a past submission was validated against.
+ * Field `id` values keep the `depositor.` / `address.` / `account.` namespaces
+ * from the previous layout. Those ids are internal: every rule, normaliser and
+ * report keys on them, and they stay stable across template revisions. Only
+ * `header` is the wire format. When GDPC revises the template, change the
+ * `header` strings, `required` flags and `enumValues`, bump `version`, and say
+ * in `provenance` which extract the new list came from — nothing else in the
+ * engine needs to change.
+ *
+ * THE COLUMN ORDER IS SIGNIFICANT. The portal reads positionally as well as by
+ * heading; `fields` is the submission order.
  */
 
 import type { TemplateProfile } from "../types.js";
 
 export const GDPC_SCV_V1: TemplateProfile = {
   id: "gdpc-scv",
-  version: "1.0.0-draft",
-  label: "GDPC Single Customer View (draft)",
+  version: "2.0.0",
+  label: "GDPC depositor submission (35-column single sheet)",
   provenance:
-    "Derived from the standard four-table SCV layout used by deposit insurers; NOT yet reconciled against the official GDPC template. Replace before production submission.",
+    "Column list and value conventions derived from a production GDPC extract " +
+    "produced from Temenos T24 by a member rural bank (Kwamanman Kona branch, " +
+    "2026). Thirty-five columns, one flat sheet, one row per account. Verify " +
+    "against the current GDPC circular before each submission cycle: this is a " +
+    "real observed template, not a published specification.",
   tables: [
     {
       id: "A",
-      name: "Depositor Details",
-      sheetName: "A_Depositors",
-      keyField: "depositor.customer_id",
+      name: "Depositor and Account Records",
+      sheetName: "Sheet1",
+      keyField: "account.account_number",
       fields: [
         {
           id: "depositor.customer_id",
-          header: "CUSTOMER_ID",
+          header: "Bank Specific Cin",
           kind: "text",
           required: true,
           maxLength: 40,
           materiality: "critical",
-          description: "The bank's own unique customer identifier. Must be unique in the file.",
-        },
-        {
-          id: "depositor.surname",
-          header: "SURNAME",
-          kind: "name",
-          required: true,
-          maxLength: 60,
-          materiality: "critical",
-        },
-        {
-          id: "depositor.first_name",
-          header: "FIRST_NAME",
-          kind: "name",
-          required: true,
-          maxLength: 60,
-          materiality: "critical",
-        },
-        {
-          id: "depositor.other_names",
-          header: "OTHER_NAMES",
-          kind: "name",
-          required: false,
-          maxLength: 80,
-          materiality: "high",
-        },
-        {
-          id: "depositor.ghana_card_pin",
-          header: "GHANA_CARD_PIN",
-          kind: "ghana_card",
-          required: true,
-          maxLength: 15,
-          materiality: "critical",
-          description: "NIA personal number in GHA-000000000-0 form.",
-        },
-        {
-          id: "depositor.other_id_type",
-          header: "OTHER_ID_TYPE",
-          kind: "enum",
-          required: false,
-          enumValues: ["PASSPORT", "VOTER_ID", "DRIVERS_LICENCE", "SSNIT", "NHIS", "NONE"],
-          materiality: "medium",
-        },
-        {
-          id: "depositor.other_id_number",
-          header: "OTHER_ID_NUMBER",
-          kind: "other_id",
-          required: false,
-          maxLength: 40,
-          materiality: "medium",
-        },
-        {
-          id: "depositor.date_of_birth",
-          header: "DATE_OF_BIRTH",
-          kind: "date",
-          required: true,
-          materiality: "critical",
-        },
-        {
-          id: "depositor.gender",
-          header: "GENDER",
-          kind: "enum",
-          required: true,
-          enumValues: ["M", "F"],
-          materiality: "high",
-        },
-        {
-          id: "depositor.mobile_number",
-          header: "MOBILE_NUMBER",
-          kind: "msisdn",
-          required: true,
-          maxLength: 15,
-          materiality: "critical",
-          description: "Primary contact number in +233XXXXXXXXX form.",
-        },
-        {
-          id: "depositor.alternate_number",
-          header: "ALTERNATE_NUMBER",
-          kind: "msisdn",
-          required: false,
-          maxLength: 15,
-          materiality: "low",
-        },
-        {
-          id: "depositor.email",
-          header: "EMAIL",
-          kind: "email",
-          required: false,
-          maxLength: 120,
-          materiality: "low",
+          description:
+            "The bank's own customer identification number (CIN). Repeats across " +
+            "every account the customer holds — it is the link, not a unique key.",
         },
         {
           id: "depositor.customer_type",
-          header: "CUSTOMER_TYPE",
+          header: "Customer Type",
           kind: "enum",
           required: true,
           enumValues: ["INDIVIDUAL", "JOINT", "SOLE_PROPRIETOR", "CORPORATE", "GROUP", "TRUST"],
           materiality: "high",
+          description:
+            "I individual, C corporate, J joint, S sole proprietor, G group/susu, T trust.",
         },
         {
-          id: "depositor.tin",
-          header: "TIN",
-          kind: "other_id",
+          id: "depositor.title",
+          header: "Title",
+          kind: "text",
           required: false,
           maxLength: 20,
           materiality: "low",
+          description: "Mr. / Mrs. / Miss / Dr. — courtesy title, not part of the legal name.",
         },
-      ],
-    },
-    {
-      id: "B",
-      name: "Address Details",
-      sheetName: "B_Addresses",
-      parentKeyField: "depositor.customer_id",
-      keyField: "address.customer_id",
-      fields: [
         {
-          id: "address.customer_id",
-          header: "CUSTOMER_ID",
-          kind: "text",
+          id: "depositor.first_name",
+          header: "First Name",
+          kind: "name",
           required: true,
-          maxLength: 40,
+          maxLength: 60,
           materiality: "critical",
+          description:
+            "Given name only. Whole names amalgamated here — the single commonest " +
+            "defect in these extracts — are split out by the name parser.",
         },
         {
-          id: "address.digital_address",
-          header: "GHANA_POST_GPS",
+          id: "depositor.other_names",
+          header: "Middle Name",
+          kind: "name",
+          required: false,
+          maxLength: 60,
+          materiality: "medium",
+        },
+        {
+          id: "depositor.surname",
+          header: "Surname",
+          kind: "name",
+          required: true,
+          maxLength: 60,
+          materiality: "critical",
+          description:
+            "Family name only. Frequently duplicates the full string already in " +
+            "First Name, or holds it in the opposite order.",
+        },
+        {
+          id: "depositor.previous_name",
+          header: "Previous Name",
+          kind: "name",
+          required: false,
+          maxLength: 120,
+          materiality: "medium",
+          description:
+            "Maiden or former name. Where present it is a legitimate reason for a " +
+            "bank/NIA surname mismatch, so the matcher consults it before flagging.",
+        },
+        {
+          id: "depositor.company_name",
+          header: "Company Name",
           kind: "text",
           required: false,
-          maxLength: 15,
+          maxLength: 160,
+          materiality: "high",
+          description: "Required when Customer Type is C or S; must be empty for I.",
+        },
+        {
+          id: "depositor.gender",
+          header: "Gender",
+          kind: "enum",
+          required: true,
+          enumValues: ["M", "F"],
           materiality: "medium",
-          description: "GhanaPostGPS digital address, e.g. GA-123-4567.",
+        },
+        {
+          id: "depositor.other_id_type",
+          header: "Id Type",
+          kind: "enum",
+          required: true,
+          enumValues: ["GHANA_CARD", "VOTER_ID", "PASSPORT", "DRIVERS_LICENCE", "SSNIT", "NONE"],
+          materiality: "critical",
+          description:
+            "G Ghana Card, V voters ID, P passport, D drivers licence, S SSNIT, " +
+            "N none. The Bank of Ghana mandate is standardisation on G: anything " +
+            "else is a remediation target, not an acceptable alternative.",
+        },
+        {
+          id: "depositor.ghana_card_pin",
+          header: "Id Number",
+          kind: "ghana_card",
+          required: true,
+          maxLength: 20,
+          materiality: "critical",
+          description:
+            "Carries the Ghana Card PIN when Id Type is G. Seen both hyphenated " +
+            "(GHA-400200100-7) and bare (GHA4001002003); both normalise to the " +
+            "canonical hyphenated form. When Id Type is not G this holds a legacy " +
+            "document number and the record is flagged for remediation.",
+        },
+        {
+          id: "depositor.company_number",
+          header: "Company Number (If Any)",
+          kind: "text",
+          required: false,
+          maxLength: 40,
+          materiality: "medium",
+          description: "Registrar-General incorporation or business registration number.",
+        },
+        {
+          id: "depositor.date_of_birth",
+          header: "Dob",
+          kind: "date",
+          required: true,
+          materiality: "critical",
+          description:
+            "Day-first (DD/MM/YYYY) in every extract seen. 01/01/1900 is not a " +
+            "birth date — it is the T24 migration default and is flagged as such.",
         },
         {
           id: "address.residential_address",
-          header: "RESIDENTIAL_ADDRESS",
+          header: "Home Address",
           kind: "text",
           required: true,
           maxLength: 200,
-          materiality: "medium",
-        },
-        {
-          id: "address.town",
-          header: "TOWN",
-          kind: "text",
-          required: true,
-          maxLength: 60,
           materiality: "low",
-        },
-        {
-          id: "address.district",
-          header: "DISTRICT",
-          kind: "text",
-          required: false,
-          maxLength: 60,
-          materiality: "low",
-        },
-        {
-          id: "address.region",
-          header: "REGION",
-          kind: "enum",
-          required: true,
-          materiality: "low",
-          enumValues: [
-            "AHAFO", "ASHANTI", "BONO", "BONO EAST", "CENTRAL", "EASTERN",
-            "GREATER ACCRA", "NORTH EAST", "NORTHERN", "OTI", "SAVANNAH",
-            "UPPER EAST", "UPPER WEST", "VOLTA", "WESTERN", "WESTERN NORTH",
-          ],
+          description:
+            "Often a GhanaPost digital address (AZ-0000-0001), sometimes a plot " +
+            "and block reference, sometimes a landmark or business name.",
         },
         {
           id: "address.postal_address",
-          header: "POSTAL_ADDRESS",
+          header: "Postal Address",
           kind: "text",
           required: false,
-          maxLength: 120,
+          maxLength: 200,
           materiality: "low",
         },
-      ],
-    },
-    {
-      id: "C",
-      name: "Account Details",
-      sheetName: "C_Accounts",
-      parentKeyField: "depositor.customer_id",
-      keyField: "account.account_number",
-      fields: [
         {
-          id: "account.customer_id",
-          header: "CUSTOMER_ID",
+          id: "address.country",
+          header: "Country",
           kind: "text",
           required: true,
-          maxLength: 40,
-          materiality: "critical",
+          maxLength: 60,
+          materiality: "low",
         },
         {
-          id: "account.account_number",
-          header: "ACCOUNT_NUMBER",
-          kind: "text",
+          id: "depositor.email",
+          header: "Email",
+          kind: "email",
+          required: false,
+          maxLength: 120,
+          materiality: "medium",
+        },
+        {
+          id: "depositor.mobile_number",
+          header: "Main Phone Number",
+          kind: "msisdn",
           required: true,
-          maxLength: 30,
           materiality: "critical",
+          description:
+            "Held as 233-prefixed international digits without a plus (233240000101). " +
+            "The primary contact vector for the whole remediation exercise.",
+        },
+        {
+          id: "depositor.alternate_number",
+          header: "Mobile Phone Number",
+          kind: "msisdn",
+          required: false,
+          materiality: "high",
+        },
+        {
+          id: "depositor.momo_number",
+          header: "Mobile Money Number",
+          kind: "msisdn",
+          required: false,
+          materiality: "high",
+          description:
+            "Frequently identical to the main number. Worth carrying separately: a " +
+            "live mobile money wallet is a payout route where a bank account is not.",
+        },
+        {
+          id: "depositor.pep",
+          header: "Politically Exposed Person (Yes/No)",
+          kind: "enum",
+          required: true,
+          enumValues: ["YES", "NO"],
+          materiality: "high",
         },
         {
           id: "account.account_type",
-          header: "ACCOUNT_TYPE",
+          header: "Account Type",
           kind: "enum",
           required: true,
           enumValues: ["SAVINGS", "CURRENT", "FIXED_DEPOSIT", "SUSU", "CALL", "SPECIAL"],
           materiality: "high",
+          description: "C current, S savings, F fixed deposit, D susu/daily, L call.",
+        },
+        {
+          id: "account.ownership",
+          header: "Account By Ownership",
+          kind: "enum",
+          required: true,
+          enumValues: ["INDIVIDUAL", "CORPORATE", "JOINT"],
+          materiality: "high",
+          description:
+            "I individual, C corporate/commercial, J joint. Distinct from Customer " +
+            "Type: an individual customer can hold a corporate-owned account.",
+        },
+        {
+          id: "account.account_number",
+          header: "Account Number",
+          kind: "text",
+          required: true,
+          maxLength: 40,
+          materiality: "critical",
+          description: "Unique within the file. This is the row key.",
+        },
+        {
+          id: "account.product_name",
+          header: "Product Name",
+          kind: "text",
+          required: true,
+          maxLength: 120,
+          materiality: "medium",
+          description:
+            "The core's product label. T24 exports leak section banners into this " +
+            "column (<<<Current Accounts Start>>>), which are flagged, not mapped.",
+        },
+        {
+          id: "account.status",
+          header: "Status Of Account",
+          kind: "enum",
+          required: true,
+          enumValues: ["ACTIVE", "DORMANT", "CLOSED", "BLOCKED", "INACTIVE"],
+          materiality: "high",
+          description: "A active, D dormant, C closed, B blocked/lien, I inactive.",
+        },
+        {
+          id: "compensation.exclusion_type",
+          header: "Exclusion Type",
+          kind: "text",
+          required: false,
+          maxLength: 60,
+          materiality: "critical",
+          description:
+            "Statutory grounds on which the deposit is excluded from protection. " +
+            "Empty means covered — so a stray character here silently removes a " +
+            "depositor from compensation and is treated as critical.",
+        },
+        {
+          id: "account.branch_code",
+          header: "Account Branch",
+          kind: "text",
+          required: true,
+          maxLength: 60,
+          materiality: "medium",
+        },
+        {
+          id: "account.joint_share",
+          header: "Account Balance (% Share For Joint Accounts)",
+          kind: "money",
+          required: false,
+          materiality: "high",
+          description:
+            "For joint accounts, this holder's share. Shares across one account " +
+            "number must total the account balance, or compensation is miscomputed.",
+        },
+        {
+          id: "account.auth_negative_balance",
+          header: "Auth. Negative Balance",
+          kind: "money",
+          required: false,
+          materiality: "medium",
+          description: "Authorised overdraft. Reduces the protected amount.",
         },
         {
           id: "account.currency",
-          header: "CURRENCY",
+          header: "Currency Of Account",
           kind: "enum",
           required: true,
           enumValues: ["GHS", "USD", "GBP", "EUR"],
           materiality: "high",
         },
         {
+          id: "account.balance_original",
+          header: "Account Balance In Original Currency",
+          kind: "money",
+          required: true,
+          materiality: "critical",
+        },
+        {
+          id: "account.exchange_rate",
+          header: "Exchange Rate",
+          kind: "money",
+          required: true,
+          materiality: "high",
+          description: "1 for GHS accounts. Must be present and non-zero for any other currency.",
+        },
+        {
           id: "account.balance",
-          header: "ACCOUNT_BALANCE",
+          header: " Account Balance In Cedis ",
           kind: "money",
           required: true,
           materiality: "critical",
+          description:
+            "The compensation base. Note the leading and trailing spaces in the " +
+            "heading — they are present in the real template and are preserved " +
+            "here deliberately; the mapper trims before comparing.",
         },
         {
-          id: "account.accrued_interest",
-          header: "ACCRUED_INTEREST",
-          kind: "money",
-          required: false,
-          materiality: "medium",
-        },
-        {
-          id: "account.branch_code",
-          header: "BRANCH_CODE",
-          kind: "text",
-          required: true,
-          maxLength: 20,
-          materiality: "medium",
-        },
-        {
-          id: "account.date_opened",
-          header: "DATE_OPENED",
-          kind: "date",
-          required: true,
-          materiality: "medium",
-        },
-        {
-          id: "account.status",
-          header: "ACCOUNT_STATUS",
-          kind: "enum",
-          required: true,
-          enumValues: ["ACTIVE", "DORMANT", "CLOSED", "BLOCKED", "INACTIVE"],
-          materiality: "high",
-        },
-        {
-          id: "account.is_joint",
-          header: "JOINT_ACCOUNT",
-          kind: "boolean",
-          required: false,
-          materiality: "high",
-        },
-        {
-          id: "account.lien_amount",
-          header: "LIEN_AMOUNT",
-          kind: "money",
-          required: false,
-          materiality: "high",
-          description: "Amount encumbered; deducted when computing the insurable balance.",
-        },
-      ],
-    },
-    {
-      id: "D",
-      name: "Compensation Details",
-      sheetName: "D_Compensation",
-      parentKeyField: "depositor.customer_id",
-      keyField: "compensation.customer_id",
-      fields: [
-        {
-          id: "compensation.customer_id",
-          header: "CUSTOMER_ID",
-          kind: "text",
-          required: true,
-          maxLength: 40,
-          materiality: "critical",
-        },
-        {
-          id: "compensation.total_balance",
-          header: "TOTAL_BALANCE",
+          id: "account.overdue_loans",
+          header: "Overdue Loans",
           kind: "money",
           required: true,
           materiality: "critical",
-          description: "Sum of all account balances for this depositor.",
-        },
-        {
-          id: "compensation.total_lien",
-          header: "TOTAL_LIEN",
-          kind: "money",
-          required: false,
-          materiality: "high",
-        },
-        {
-          id: "compensation.insured_amount",
-          header: "INSURED_AMOUNT",
-          kind: "money",
-          required: true,
-          materiality: "critical",
-          description: "Protected amount, capped at the statutory coverage limit.",
-        },
-        {
-          id: "compensation.uninsured_amount",
-          header: "UNINSURED_AMOUNT",
-          kind: "money",
-          required: false,
-          materiality: "high",
+          description:
+            "Set off against the balance before compensation is paid, so an " +
+            "understated figure overstates the protected amount.",
         },
       ],
     },
@@ -363,11 +381,31 @@ export const GDPC_SCV_V1: TemplateProfile = {
 };
 
 /**
- * The statutory coverage limit per depositor per institution, in Ghana cedis.
- * Kept here rather than inline so it is one edit when the Bank of Ghana revises
- * it. Confirm the current figure against the prevailing GDPC directive.
+ * Statutory compensation ceilings, in Ghana cedis, per depositor per institution.
+ *
+ * Confirm against the prevailing Bank of Ghana / GDPC directive before a real
+ * submission cycle — these are revised by legislative instrument.
  */
 export const COVERAGE_LIMITS = {
   bank: 6_250,
   sdi: 1_250,
 } as const;
+
+/**
+ * The T24 migration default date.
+ *
+ * When legacy accounts were migrated into T24, mandatory demographic fields with
+ * no historical value were populated with this date to clear the core's own
+ * validation. It is therefore a marker of an unverifiable legacy record, not a
+ * date of birth, and records carrying it are almost always missing identification
+ * and contact details too.
+ */
+export const T24_MIGRATION_DEFAULT_DOB = "1900-01-01";
+
+/**
+ * Section banners that T24 exports leak into data columns.
+ *
+ * These arrive as ordinary cell values in Product Name and must never be mapped
+ * through as product labels.
+ */
+export const T24_SECTION_BANNER = /^<{2,}.*(?:start|end).*>{2,}$/i;

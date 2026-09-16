@@ -147,22 +147,46 @@ than using SheetJS or ExcelJS, because those are Node-targeted and this has to
 run in a Worker. Output is verified against `openpyxl`, not only against the
 reader in this repo.
 
-## The GDPC template caveat — read this
+## The GDPC template
 
-**The GDPC does not publish its depositor upload template openly.** The profile
-in `packages/core/src/profiles/gdpc-scv-v1.ts` follows the standard four-table
-Single Customer View layout (A depositor, B address, C account, D compensation),
-with field names and types chosen to match what Ghanaian rural banks hold. It is
-marked `1.0.0-draft` and carries a `provenance` string saying so.
+`packages/core/src/profiles/gdpc-scv-v1.ts` now carries the **real template**,
+taken from a production extract a member rural bank produced from its Temenos
+T24 core: thirty-five columns on one flat sheet, one row per account, with the
+depositor's details repeated across each of their accounts.
 
-**Replace it with the official template before any production submission.**
-Nothing else needs to change: mapping, normalisation, audit and export all read
-the profile rather than hard-coding columns, so correcting it is a config edit.
-Bump the version and update `provenance` so an auditor can tell which template a
-past submission was validated against.
+This replaced an earlier guess at a four-table Single Customer View layout,
+which was wrong in structure as well as in naming. Fitting the engine to the
+real file surfaced several things no invented fixture would have:
+
+- **Values arrive as single-letter T24 codes** — `I` individual, `G` Ghana Card,
+  `C` current account. The enum resolver had none of them, so on real data every
+  record failed with `REQUIRED_FIELD_EMPTY` and the whole file quarantined.
+- **Phone numbers are 233-prefixed without a plus** (`233240000101`).
+- **Ghana Card numbers appear both bare and hyphenated** in the same column —
+  `GHA4001002003` beside `GHA-400200100-7`.
+- **Dates are day-first**, and `01/01/1900` is not a birth date: it is the value
+  T24 wrote into every migrated record that had no real one, so it marks an
+  unverifiable legacy account rather than a nonagenarian.
+- **T24 leaks its own section banners into data columns** — `<<<Current Accounts
+  Start>>>` arrives as an ordinary cell value in Product Name.
+- **Whole names collapse into one column**, or are duplicated across First Name
+  and Surname in opposite orders.
+
+Column *order* is significant, and one heading is padded with spaces
+(`" Account Balance In Cedis "`); both are reproduced exactly, because a portal
+matching headings literally would reject the tidied form.
+
+Still verify the column list against the current GDPC circular each submission
+cycle — this is a real observed template, not a published specification. If it
+changes, correct the `header` strings and `enumValues`, bump `version`, and say
+in `provenance` which extract the new list came from. Nothing else changes:
+mapping, normalisation, audit and export all read the profile.
 
 The statutory coverage limits in `COVERAGE_LIMITS` should likewise be confirmed
 against the prevailing Bank of Ghana directive.
+
+**No depositor data is committed to this repository.** The fixtures in
+`packages/core/test/real-template.test.ts` are synthetic rows in the real shapes.
 
 ## Getting started
 

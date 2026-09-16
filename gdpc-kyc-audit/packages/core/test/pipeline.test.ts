@@ -172,10 +172,14 @@ describe("end-to-end alignment pipeline", () => {
     expect(bytes.byteLength).toBeGreaterThan(1000);
 
     const readBack = readXlsx(bytes, { sheetName: table.sheetName, headerRow: 1 });
-    expect(readBack.headers).toEqual(table.fields.map((f) => f.header));
+    // The workbook is written with the template's headings exactly as GDPC
+    // supplies them, padding included (" Account Balance In Cedis "). The reader
+    // trims on the way back in — deliberately, because bank files carry stray
+    // whitespace everywhere — so the round trip is compared against trimmed form.
+    expect(readBack.headers).toEqual(table.fields.map((f) => f.header.trim()));
     expect(readBack.rows).toHaveLength(5);
-    expect(readBack.rows[0]!.cells["GHANA_CARD_PIN"]).toBe("GHA-123456780-1");
-    expect(readBack.rows[0]!.cells["MOBILE_NUMBER"]).toBe("+233244123456");
+    expect(readBack.rows[0]!.cells["Id Number"]).toBe("GHA-123456780-1");
+    expect(readBack.rows[0]!.cells["Main Phone Number"]).toBe("+233244123456");
   });
 
   it("produces an audit report workbook with the expected sheets", () => {

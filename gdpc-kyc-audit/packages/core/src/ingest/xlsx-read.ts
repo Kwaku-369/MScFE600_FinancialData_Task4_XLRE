@@ -189,7 +189,14 @@ function readSheetMatrix(
 
     const cells: RawCell[] = [];
 
-    for (const cellMatch of body.matchAll(/<c\b([^>]*)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+    // The attribute run is matched LAZILY on purpose. With a greedy `[^>]*` the
+    // engine consumes the `/` of a self-closing `<c r="J2" s="17"/>`, finds the
+    // `/>` branch failing, and takes the `>` branch instead — whereupon the lazy
+    // body runs on to the NEXT cell's `</c>` and swallows it whole. The empty
+    // cell and the populated one after it both come back null. Real core-banking
+    // exports are full of empty-but-styled cells, so that silently dropped live
+    // Ghana Card and phone values. Lazy expansion tries `/>` first and stops.
+    for (const cellMatch of body.matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
       const attrs = `<c ${cellMatch[1] ?? ""}>`;
       const inner = cellMatch[2] ?? "";
 

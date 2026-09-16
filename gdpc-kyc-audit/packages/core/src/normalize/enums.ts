@@ -22,6 +22,9 @@ const GENDER: Record<string, string> = {
 };
 
 const CUSTOMER_TYPE: Record<string, string> = {
+  // Temenos T24 single-letter codes, as they arrive in the GDPC extract.
+  I: "INDIVIDUAL", C: "CORPORATE", J: "JOINT", S: "SOLE_PROPRIETOR",
+  G: "GROUP", T: "TRUST",
   INDIVIDUAL: "INDIVIDUAL", IND: "INDIVIDUAL", PERSONAL: "INDIVIDUAL",
   PERSON: "INDIVIDUAL", SINGLE: "INDIVIDUAL", RETAIL: "INDIVIDUAL",
   JOINT: "JOINT", "JOINT ACCOUNT": "JOINT", JT: "JOINT",
@@ -35,6 +38,9 @@ const CUSTOMER_TYPE: Record<string, string> = {
 };
 
 const ACCOUNT_TYPE: Record<string, string> = {
+  // T24 single-letter codes. `D` is the daily-collection (susu) product and `L`
+  // the call account; neither reads obviously, hence the table.
+  C: "CURRENT", S: "SAVINGS", F: "FIXED_DEPOSIT", D: "SUSU", L: "CALL",
   SAVINGS: "SAVINGS", SAV: "SAVINGS", SB: "SAVINGS", "SAVINGS ACCOUNT": "SAVINGS",
   "SAVINGS AC": "SAVINGS", "SAVING": "SAVINGS", ORDINARY: "SAVINGS",
   CURRENT: "CURRENT", CUR: "CURRENT", CA: "CURRENT", "CURRENT ACCOUNT": "CURRENT",
@@ -66,6 +72,12 @@ const CURRENCY: Record<string, string> = {
 };
 
 const ID_TYPE: Record<string, string> = {
+  // T24 single-letter codes. `G` is the Ghana Card — the only value the Bank of
+  // Ghana mandate accepts as an end state; the rest are remediation targets.
+  G: "GHANA_CARD", V: "VOTER_ID", P: "PASSPORT", D: "DRIVERS_LICENCE",
+  S: "SSNIT", N: "NONE",
+  "GHANA CARD": "GHANA_CARD", GHANACARD: "GHANA_CARD", GHANA_CARD: "GHANA_CARD",
+  "NATIONAL ID": "GHANA_CARD", NIA: "GHANA_CARD", "GHANA CARD PIN": "GHANA_CARD",
   PASSPORT: "PASSPORT", "PASSPORT ID": "PASSPORT",
   "VOTER ID": "VOTER_ID", VOTERS: "VOTER_ID", "VOTERS ID": "VOTER_ID",
   VOTER: "VOTER_ID", "VOTER CARD": "VOTER_ID",
@@ -88,7 +100,23 @@ const REGION_ALIASES: Record<string, string> = {
   UE: "UPPER EAST", UW: "UPPER WEST",
 };
 
+/** Account By Ownership — distinct from Customer Type in the GDPC template. */
+const ACCOUNT_OWNERSHIP: Record<string, string> = {
+  I: "INDIVIDUAL", INDIVIDUAL: "INDIVIDUAL", PERSONAL: "INDIVIDUAL",
+  C: "CORPORATE", CORPORATE: "CORPORATE", COMMERCIAL: "CORPORATE",
+  COMPANY: "CORPORATE", BUSINESS: "CORPORATE",
+  J: "JOINT", JOINT: "JOINT", "JOINT ACCOUNT": "JOINT",
+};
+
+/** Politically Exposed Person (Yes/No). */
+const YES_NO: Record<string, string> = {
+  YES: "YES", Y: "YES", TRUE: "YES", "1": "YES", PEP: "YES",
+  NO: "NO", N: "NO", FALSE: "NO", "0": "NO", NIL: "NO", NONE: "NO",
+};
+
 const TABLES: Record<string, Record<string, string>> = {
+  "account.ownership": ACCOUNT_OWNERSHIP,
+  "depositor.pep": YES_NO,
   "depositor.gender": GENDER,
   "depositor.customer_type": CUSTOMER_TYPE,
   "depositor.other_id_type": ID_TYPE,
