@@ -1,0 +1,25 @@
+{
+  "name": "gdpc-kyc-audit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "KYC alignment and audit platform for GDPC (Ghana Deposit Protection Corporation) depositor-data submissions by rural and community banks",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspace @gdpc/core",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:worker": "npm run dev --workspace @gdpc/worker",
+    "dev:web": "npm run dev --workspace @gdpc/web",
+    "deploy": "npm run deploy --workspace @gdpc/worker"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
