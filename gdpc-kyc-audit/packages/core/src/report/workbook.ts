@@ -17,6 +17,7 @@
 import type {
   BatchAudit,
   Disposition,
+  FieldSpec,
   Finding,
   RecordAudit,
   TableSpec,
@@ -72,7 +73,7 @@ export function buildAlignedWorkbook(
       const cell = recordAudit.record.fields[field.id];
       const fieldFindings = findingsByField.get(field.id) ?? [];
 
-      const value = formatValue(cell?.value ?? null, field.kind);
+      const value = formatValue(cell?.value ?? null, field);
 
       if (!colour) return { value, text: isTextual(field.kind) };
 
@@ -254,7 +255,7 @@ function changeLedgerSheet(table: TableSpec, audit: BatchAudit): SheetData {
       if (!cell || !cell.changed) continue;
 
       const original = stringify(cell.raw);
-      const submitted = formatValue(cell.value, field.kind);
+      const submitted = formatValue(cell.value, field);
       if (original === submitted) continue;
 
       const fieldFindings = findingsByField.get(field.id) ?? [];
@@ -373,12 +374,23 @@ function rank(d: Disposition): number {
   return DISPOSITION_RANK[d];
 }
 
-function formatValue(value: unknown, kind: string): string | number {
+/**
+ * Render a normalised value in the form the receiving template expects.
+ *
+ * Controlled vocabularies are canonicalised internally (`INDIVIDUAL`, `ACTIVE`)
+ * so rules need not know every core system's spelling. The portal wants its own
+ * codes back, so the field's `submissionCodes` is applied here on the way out.
+ * A canonical value with no code declared is written through unchanged.
+ */
+function formatValue(value: unknown, field: FieldSpec): string | number {
   if (value === null || value === undefined) return "";
+  const kind = field.kind;
   if (kind === "money") return formatMoney(typeof value === "number" ? value : Number(value));
   if (typeof value === "boolean") return value ? "Y" : "N";
   if (typeof value === "number") return value;
-  return String(value);
+
+  const text = String(value);
+  return field.submissionCodes?.[text] ?? text;
 }
 
 /** Long digit strings must not be reformatted into scientific notation. */

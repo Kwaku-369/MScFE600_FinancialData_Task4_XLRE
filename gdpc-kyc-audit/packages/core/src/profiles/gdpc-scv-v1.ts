@@ -59,6 +59,10 @@ export const GDPC_SCV_V1: TemplateProfile = {
           kind: "enum",
           required: true,
           enumValues: ["INDIVIDUAL", "JOINT", "SOLE_PROPRIETOR", "CORPORATE", "GROUP", "TRUST"],
+          submissionCodes: {
+            INDIVIDUAL: "I", CORPORATE: "C", JOINT: "J",
+            SOLE_PROPRIETOR: "S", GROUP: "G", TRUST: "T",
+          },
           materiality: "high",
           description:
             "I individual, C corporate, J joint, S sole proprietor, G group/susu, T trust.",
@@ -136,6 +140,10 @@ export const GDPC_SCV_V1: TemplateProfile = {
           kind: "enum",
           required: true,
           enumValues: ["GHANA_CARD", "VOTER_ID", "PASSPORT", "DRIVERS_LICENCE", "SSNIT", "NONE"],
+          submissionCodes: {
+            GHANA_CARD: "G", VOTER_ID: "V", PASSPORT: "P",
+            DRIVERS_LICENCE: "D", SSNIT: "S", NONE: "N",
+          },
           materiality: "critical",
           description:
             "G Ghana Card, V voters ID, P passport, D drivers licence, S SSNIT, " +
@@ -242,6 +250,7 @@ export const GDPC_SCV_V1: TemplateProfile = {
           kind: "enum",
           required: true,
           enumValues: ["YES", "NO"],
+          submissionCodes: { YES: "Yes", NO: "No" },
           materiality: "high",
         },
         {
@@ -250,6 +259,10 @@ export const GDPC_SCV_V1: TemplateProfile = {
           kind: "enum",
           required: true,
           enumValues: ["SAVINGS", "CURRENT", "FIXED_DEPOSIT", "SUSU", "CALL", "SPECIAL"],
+          submissionCodes: {
+            CURRENT: "C", SAVINGS: "S", FIXED_DEPOSIT: "F",
+            SUSU: "D", CALL: "L", SPECIAL: "S",
+          },
           materiality: "high",
           description: "C current, S savings, F fixed deposit, D susu/daily, L call.",
         },
@@ -259,6 +272,7 @@ export const GDPC_SCV_V1: TemplateProfile = {
           kind: "enum",
           required: true,
           enumValues: ["INDIVIDUAL", "CORPORATE", "JOINT"],
+          submissionCodes: { INDIVIDUAL: "I", CORPORATE: "C", JOINT: "J" },
           materiality: "high",
           description:
             "I individual, C corporate/commercial, J joint. Distinct from Customer " +
@@ -290,6 +304,10 @@ export const GDPC_SCV_V1: TemplateProfile = {
           kind: "enum",
           required: true,
           enumValues: ["ACTIVE", "DORMANT", "CLOSED", "BLOCKED", "INACTIVE"],
+          submissionCodes: {
+            ACTIVE: "A", DORMANT: "D", CLOSED: "C",
+            BLOCKED: "B", INACTIVE: "I",
+          },
           materiality: "high",
           description: "A active, D dormant, C closed, B blocked/lien, I inactive.",
         },

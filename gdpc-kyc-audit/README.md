@@ -176,6 +176,16 @@ Column *order* is significant, and one heading is padded with spaces
 (`" Account Balance In Cedis "`); both are reproduced exactly, because a portal
 matching headings literally would reject the tidied form.
 
+### Codes in, codes out
+
+Controlled vocabularies are canonicalised on the way in (`I` becomes
+`INDIVIDUAL`, `A` becomes `ACTIVE`), because a rule that has to know every core
+system's spelling of "savings account" is unmaintainable. The portal wants its
+own codes back, so each enum field carries a `submissionCodes` map and the
+submission workbook writes through it. A file full of `INDIVIDUAL` / `ACTIVE` /
+`CURRENT` would be rejected on upload — the exact failure this platform exists
+to prevent — so `test/real-template.test.ts` asserts the round trip.
+
 Still verify the column list against the current GDPC circular each submission
 cycle — this is a real observed template, not a published specification. If it
 changes, correct the `header` strings and `enumValues`, bump `version`, and say

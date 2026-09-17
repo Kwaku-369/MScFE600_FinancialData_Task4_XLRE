@@ -5,6 +5,8 @@ import { runAudit } from "../src/audit/engine.js";
 import { GDPC_SCV_V1 } from "../src/profiles/gdpc-scv-v1.js";
 import { getTable } from "../src/profiles/registry.js";
 import { readCsv } from "../src/ingest/csv.js";
+import { readXlsx } from "../src/ingest/xlsx-read.js";
+import { buildAlignedWorkbook } from "../src/report/workbook.js";
 
 /**
  * The GDPC template checked against itself.
@@ -190,6 +192,36 @@ describe("the real GDPC template", () => {
       (f) => f.rowNumber === 2 && f.disposition === "rejected",
     );
     expect(blocking).toEqual([]);
+  });
+
+  it("writes the portal's own codes back out, not the engine's canonical forms", () => {
+    // The engine canonicalises `I` to INDIVIDUAL on the way in so rules need not
+    // know every core's spelling. The portal wants `I` back. A submission file
+    // full of INDIVIDUAL / ACTIVE / CURRENT would be rejected on upload, which
+    // is the exact failure this platform exists to prevent.
+    const bytes = buildAlignedWorkbook(GDPC_SCV_V1, table, audit, {
+      institutionName: "Kwamanman Rural Bank Ltd",
+      batchReference: "KONA-1",
+      colourCoded: false,
+    });
+    const back = readXlsx(bytes, { sheetName: table.sheetName, headerRow: 1 });
+    const first = back.rows[0]!.cells;
+
+    expect(first["Customer Type"]).toBe("I");
+    expect(first["Id Type"]).toBe("G");
+    expect(first["Account Type"]).toBe("C");
+    expect(first["Account By Ownership"]).toBe("I");
+    expect(first["Status Of Account"]).toBe("A");
+    expect(first["Politically Exposed Person (Yes/No)"]).toBe("No");
+
+    // The legacy voters-ID record keeps its own code rather than being coerced.
+    const voters = back.rows[3]!.cells;
+    expect(voters["Id Type"]).toBe("V");
+    expect(voters["Account Type"]).toBe("S");
+
+    // Values outside the controlled vocabularies pass through untouched.
+    expect(first["Id Number"]).toBe("GHA-400100200-3");
+    expect(first["Main Phone Number"]).toBe("+233240000101");
   });
 
   it("still holds back a day/month-ambiguous date for checking", () => {

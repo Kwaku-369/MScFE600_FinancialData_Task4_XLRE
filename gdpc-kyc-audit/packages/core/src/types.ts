@@ -58,6 +58,18 @@ export interface FieldSpec {
    * NIA record is materially significant. Name / DOB / ID are; a town name is not.
    */
   materiality: "critical" | "high" | "medium" | "low";
+  /**
+   * Canonical value -> the code the receiving template expects on output.
+   *
+   * The engine canonicalises controlled vocabularies on the way in, because a
+   * rule that has to know every core system's spelling of "savings account" is
+   * unmaintainable. The portal, though, wants its own codes back — `I`, not
+   * `INDIVIDUAL`. This is that inverse, and it belongs to the template rather
+   * than the engine, so a template revision is still a single-file change.
+   *
+   * Omitted means the canonical value is itself what the template expects.
+   */
+  submissionCodes?: Record<string, string>;
 }
 
 export interface TableSpec {
